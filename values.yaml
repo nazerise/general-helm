@@ -86,12 +86,10 @@ resources:
 secret: 
 #  - name: "db"
 #    value:
-#      DB_PASSWORD: "gamsamantest"
-#      DB_URL: jdbc:oracle:thin:@//basamad-test-db:1521/arcdb
-#      DB_USERNAME: "gam_saman_test"
+#      DB_PASSWORD: "123456789"
 #  - name: "auth"
 #    value:
-#      keycloak.credentials.secret: 123456789-123456789
+#      app.credentials: AaBb123456789
   - name: "secret1"
     volume:
       secretkey.filepath: stest.txt
@@ -159,7 +157,7 @@ secretMounts:
 #     defaultMode: 420
 #     mode: 420
 persistence:
-  enabled: true
+  enabled: false
   name: "test"
   path: /opt
   labels:
