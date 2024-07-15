@@ -1,0 +1,225 @@
+{{- $releaseName := .Release.Name -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "general.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "general.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "general.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.extraEnvs }}
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if .Values.secret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        checksum/service: {{ include (print $.Template.BasePath "/service.yaml") . | sha256sum }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - {{ .Release.Name }}
+              namespaces:
+              - {{ .Release.Namespace }}
+              topologyKey: kubernetes.io/hostname
+            weight: 99
+      volumes:
+      {{- if .Values.persistence.enabled }}
+      - name: {{ .Values.persistence.name }}
+        persistentVolumeClaim:
+          claimName: {{ $releaseName }}-{{ .Values.persistence.name }}
+      {{- end }}
+      {{- if .Values.configmapMounts }}
+      {{- range $configidx, $configval := .Values.configmapMounts }}
+      - configMap:
+          defaultMode: {{ $configval.defaultMode | default 420 }}
+          {{- if $configval.items }}
+          items:
+          {{- range $configval.items }}
+          - key: {{ .key }}
+            {{- if .path }}
+            path: {{ regexFind "[^/]*$" .path }}
+            {{- end }}
+            {{- if .mode }}
+            mode: {{ .mode | default 420 }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+          name: {{ $releaseName }}-{{ $configval.configmapName }}
+          optional: {{ $configval.optional | default false }}
+        name: {{ $configval.name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.secretMounts }}
+      {{- range $secretidx, $secretval := .Values.secretMounts }}
+      - name: {{ $secretval.name }}
+        secret:
+          defaultMode: {{ $secretval.defaultMode | default 420 }}
+          {{- if $secretval.items }}
+          items:
+          {{- range $secretval.items }}
+          - key: {{ .key }}
+            {{- if .path }}
+            path: {{ regexFind "[^/]*$" .path }}
+            {{- end }}
+            {{- if .mode }}
+            mode: {{ .mode | default 420 }}
+            {{- end }}
+          {{- end }}
+          {{- end }}
+          optional: {{ $secretval.optional | default false }}
+          secretName: {{ $releaseName }}-{{ $secretval.secretName }}-secret
+      {{- end }}
+      {{- end }}
+      {{- if .Values.hostAliases.enabled }}
+      hostAliases:
+        {{- range .Values.hostAliases.extra_host }}
+        - ip: {{ .ip }}
+          hostnames:
+          - {{ .host }}
+        {{- end }}
+      {{- end }}
+      {{- if gt (len .Values.initContainers) 0 }}
+      initContainers:
+      {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- $condition := "1" }}
+          {{- range .Values.extraEnvs }}
+          {{- if .alias }}
+          {{- if eq $condition "1" }}
+          env:
+          {{- $condition = "2" }}
+          {{- end }}
+            - name: {{ .alias }}
+              valueFrom:
+                configMapKeyRef:
+                   key: {{ .valueFrom.key }}
+                   name: {{ .valueFrom.name }}
+          {{- end }}
+          {{- end }}
+          {{- range .Values.secret }}
+          {{- if .alias }}
+          {{- if eq $condition "1" }}
+          env:
+          {{- $condition = "3" }}
+          {{- end }}
+            - name: {{ .alias }}
+              valueFrom:
+                secretKeyRef:
+                   key: {{ .valueFrom.key }}
+                   name: {{ .valueFrom.name }}
+          {{- end }}
+          {{- end }}
+          {{- if or (not (empty .Values.extraEnvs )) (.Values.secret) }}
+          envFrom:
+          {{- if (not (empty .Values.extraEnvs )) }}
+          {{- range .Values.extraEnvs }}
+          {{- if .value }}
+            - configMapRef:
+                name: {{ $releaseName }}-{{ .name }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secret }}
+          {{- range .Values.secret }}
+          {{- if .value }}
+            - secretRef:
+                name: {{ $releaseName }}-{{ .name }}-secret
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          ports:
+            {{- range .Values.container.ports }}
+            - name: {{ .name }}{{ .protocol | lower }}
+              containerPort: {{ .port }}
+              protocol: {{default .protocol "TCP"}}
+            {{- end }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- if or (.Values.persistence.enabled) (.Values.configmapMounts) (.Values.secretMounts) }}
+          volumeMounts:
+          {{- if .Values.persistence.enabled }}
+            - name: {{ .Values.persistence.name }}
+              mountPath: {{ .Values.persistence.path }}
+          {{- end }}
+          {{- if .Values.configmapMounts }}
+          {{- $name_configmapMounts := "" -}}
+          {{- $readOnly_configmapMounts := false -}}
+          {{- range .Values.configmapMounts }}
+          {{- $name_configmapMounts = .name -}}
+          {{- $readOnly_configmapMounts = .readOnly | default false -}}
+          {{- if and .subPath .path (not .items) }}
+            - mountPath: {{ .path }}
+              subPath: {{ .subPath }}
+              name: {{ $name_configmapMounts }}
+          {{- end }}
+          {{- if and (not .subPath) .path }}
+            - mountPath: {{ .path }}
+              name: {{ $name_configmapMounts }}
+          {{- end }}
+          {{- if .items }}
+          {{- range .items }}
+          {{- if .path }}
+            - mountPath: {{ .path }}
+              subPath: {{ regexFind "[^/]*$" .path }}
+              name: {{ $name_configmapMounts }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.secretMounts }}
+          {{- $name_secretMounts := "" -}}
+          {{- range .Values.secretMounts }}
+          {{- $name_secretMounts = .name -}}
+          {{- if and .subPath .path (not .items) }}
+            - mountPath: {{ .path }}
+              subPath: {{ .subPath }}
+              name: {{ $name_secretMounts }}
+          {{- end }}
+          {{- if and (not .subPath) .path }}
+            - mountPath: {{ .path }}
+              name: {{ $name_secretMounts }}
+          {{- end }}
+          {{- if .items }}
+          {{- range .items }}
+          {{- if .path }}
+            - mountPath: {{ .path }}
+              subPath: {{ regexFind "[^/]*$" .path }}
+              name: {{ $name_secretMounts }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}
+          {{- end }}

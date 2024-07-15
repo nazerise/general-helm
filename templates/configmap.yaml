@@ -1,0 +1,36 @@
+{{- $releaseName := .Release.Name -}}
+{{- $releaseNamespace := .Release.Namespace -}}
+{{- if and (not (empty .Values.extraEnvs )) }}
+{{- range .Values.extraEnvs }}
+{{- if or .value .volume }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $releaseName }}-{{ .name }}
+  namespace: {{ $releaseNamespace }}
+data:
+{{- if .value }}
+{{- range $k, $v := .value }}
+  {{- if hasSuffix "filepath" $k }}
+  {{ $k | replace ".filepath" "" }}: {{ $.Files.Get $v | toYaml | nindent 4 }}
+  {{ else }}
+  {{ $k }}: {{ $v | quote}}
+  {{- end }}
+{{- end }}
+{{- end }}
+{{- if .volume }}
+{{- range $k, $v := .volume }}
+  {{- if hasSuffix "filepath" $k }}
+  {{ $k | replace ".filepath" "" }}: {{ $.Files.Get $v | toYaml | nindent 4 }}
+  {{ else }}
+  {{ $k }}: {{ $v | quote}}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+{{- end }}
+{{- end }}
+
+

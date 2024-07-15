@@ -1,0 +1,10 @@
+{{- if .Values.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+{{ toYaml .Values.volumeClaimTemplate | indent 4 }}
+{{- end }}

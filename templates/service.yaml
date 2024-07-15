@@ -1,0 +1,50 @@
+{{- $releaseName := .Release.Name -}}
+{{- $releaseNamespace := .Release.Namespace }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    field.cattle.io/targetWorkloadIds: '["deployment:{{ $releaseNamespace }}:{{ $releaseName }}"]'
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ $releaseName }}
+  namespace: {{ $releaseNamespace }}
+  labels:
+    {{- include "general.labels" $| nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    {{- range .Values.container.ports }}
+    - targetPort: {{ .port }}
+      port: {{ .servicePort }}
+      protocol: {{ .protocol | default "TCP" }}
+      name: {{ .name }}-cluster
+    {{- end }}
+  selector:
+    {{- include "general.selectorLabels" $ | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    field.cattle.io/targetWorkloadIds: '["deployment:{{ $releaseNamespace }}:{{ $releaseName }}"]'
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: {{ $releaseName }}-nodeport
+  namespace: {{ $releaseNamespace }}
+  labels:
+    {{- include "general.labels" $ | nindent 4 }}
+spec:
+  type: NodePort
+  ports:
+    {{- range .Values.container.ports }}
+    - targetPort: {{ .port }}
+      protocol: TCP
+      port: {{ .servicePort }}
+      name: {{ .name }}-nodeport
+    {{- end }}
+  selector:
+    {{- include "general.selectorLabels" $ | nindent 4 }}

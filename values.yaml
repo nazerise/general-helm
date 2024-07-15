@@ -1,0 +1,175 @@
+#Write with an accurate image and tag 
+image:
+  repository: test
+  pullPolicy: IfNotPresent
+  tag: "1"
+
+replicaCount: 0
+
+
+initContainers: []
+
+#Write port of containt in value of port. Write expose port in value of servicePort.
+#Only the port which is named "http" is used in mapping
+container:
+  ports:
+    - port: 8080
+      name: http
+      servicePort: 80
+      protocol: "TCP"
+    - port: 8443
+      name: https
+      servicePort: 443
+      protocol: "TCP"
+
+#Change value for management.prefix or delete lables if it is not spring-boot 
+service:
+  type: ClusterIP
+  labels: []
+  enabled: true
+  annotations: {}
+
+#change ENV with environment of the namespace such as dev, test, online-dms-v3
+#complete allow_upgrade if websocket is used
+ingress:
+  enabled: true
+  hosts:
+    - host: "test.test.com"
+      paths:
+        - path: /test/v1
+          rewrite: /test
+          retryCount: 10
+          retryTimeout: 20s
+          retryOn: 5xx
+          timeout: 120000
+          allow_upgrade: {}
+
+hostAliases:
+  enabled: false
+  extra_host:
+    - host: example.com
+      ip: 192.168.1.1
+
+#Write healthceck path and port and change other values according to the microservice
+livenessProbe:
+  failureThreshold: 3
+  httpGet:
+    path: /test
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 100
+  periodSeconds: 30
+  successThreshold: 1
+  timeoutSeconds: 30
+readinessProbe:
+  failureThreshold: 2
+  httpGet:
+    path: /test
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 100
+  periodSeconds: 30
+  successThreshold: 1
+  timeoutSeconds: 30
+
+#Write limit and request resources according to the microservice
+resources:
+  limits:
+    cpu: 3000m
+    memory: 2700Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+#Put the file in helm directory and write the filename under the volume with desired name
+#wire the enviroment and its value under the value with desired name
+secret: 
+#  - name: "db"
+#    value:
+#      DB_PASSWORD: "gamsamantest"
+#      DB_URL: jdbc:oracle:thin:@//basamad-test-db:1521/arcdb
+#      DB_USERNAME: "gam_saman_test"
+#  - name: "auth"
+#    value:
+#      keycloak.credentials.secret: 123456789-123456789
+  - name: "secret1"
+    volume:
+      secretkey.filepath: stest.txt
+#
+#  - alias: JAVA_OPTS  
+#    valueFrom:       
+#      key: java_options        
+#      name: sysenv-512m
+
+#Put the file in helm directory and write the filename under the volume with desired name
+#wire the enviroment and its value under the value with desired name
+extraEnvs: 
+  - name: "confimap1"
+    volume:
+      configmapkey.filepath: test.txt
+#
+#  - alias: JAVA_OPTS  
+#    valueFrom:       
+#      key: java_options        
+#      name: sysenv-512m
+  - name: envs
+    value:
+      TZ: "Asia/Tehran"
+
+
+#Write name, configmapName and path to mount your configmap. Other parameters are optional
+configmapMounts:
+   - name: cvol1
+     configmapName: configmap1
+     path: /var/tmp
+#
+#   - name: vol1
+#     configmapName: configmap1
+#     items:
+#       - key: configmapkey
+#         path: test.conf
+#         mode: 420
+#     readOnly: false
+#     defaultMode: 420
+#
+#   - name: vol2
+#     configmapName: configmap2
+#     path: /tmp
+#     readOnly: false
+#     defaultMode: 420
+#     mode: 420
+#
+#   - name: vol3
+#     configmapName: configmap3
+#     path: /tmp/test.conf
+#     subPath: test.conf
+#     readOnly: false
+#     defaultMode: 420
+#     mode: 420
+
+#Write name, secretName and path to mount your secret. Other parameters are optional
+secretMounts: 
+   - name: svol2
+     secretName: secret1
+     secretKey: 
+       - secretkey
+     path: /tmp/certs
+#     subPath: chain.pem
+#     readOnly: true
+#     defaultMode: 420
+#     mode: 420
+persistence:
+  enabled: true
+  name: "test"
+  path: /opt
+  labels:
+    # Add default labels for the volumeClaimTemplate of the StatefulSet
+    enabled: false
+  annotations: {}
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: "longhorn"
+  resources:
+    requests:
+      storage: 10Gi

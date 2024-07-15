@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 1
+description: A Helm chart for installation of Template on kubernetes
+name: template
+type: application
+version: 1
