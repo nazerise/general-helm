@@ -29,20 +29,13 @@ service:
   enabled: true
   annotations: {}
 
-#change ENV with environment of the namespace such as dev, test, online-dms-v3
-#complete allow_upgrade if websocket is used
+#Create ingress for service with name http
 ingress:
   enabled: true
   hosts:
     - host: "test.test.com"
       paths:
         - path: /test/v1
-          rewrite: /test
-          retryCount: 10
-          retryTimeout: 20s
-          retryOn: 5xx
-          timeout: 120000
-          allow_upgrade: {}
 
 hostAliases:
   enabled: false
@@ -83,16 +76,16 @@ resources:
 
 #Put the file in helm directory and write the filename under the volume with desired name
 #wire the enviroment and its value under the value with desired name
-secret: 
+secret: []
 #  - name: "db"
 #    value:
 #      DB_PASSWORD: "123456789"
 #  - name: "auth"
 #    value:
 #      app.credentials: AaBb123456789
-  - name: "secret1"
-    volume:
-      secretkey.filepath: stest.txt
+#  - name: "secret1"
+#    volume:
+#      secretkey.filepath: stest.txt
 #
 #  - alias: JAVA_OPTS  
 #    valueFrom:       
@@ -101,25 +94,25 @@ secret:
 
 #Put the file in helm directory and write the filename under the volume with desired name
 #wire the enviroment and its value under the value with desired name
-extraEnvs: 
-  - name: "confimap1"
-    volume:
-      configmapkey.filepath: test.txt
+extraEnvs: []
+#  - name: "confimap1"
+#    volume:
+#      configmapkey.filepath: test.txt
 #
 #  - alias: JAVA_OPTS  
 #    valueFrom:       
 #      key: java_options        
 #      name: sysenv-512m
-  - name: envs
-    value:
-      TZ: "Asia/Tehran"
+#  - name: envs
+#    value:
+#      TZ: "Asia/Tehran"
 
 
 #Write name, configmapName and path to mount your configmap. Other parameters are optional
-configmapMounts:
-   - name: cvol1
-     configmapName: configmap1
-     path: /var/tmp
+configmapMounts: []
+#   - name: cvol1
+#     configmapName: configmap1
+#     path: /var/tmp
 #
 #   - name: vol1
 #     configmapName: configmap1
@@ -146,12 +139,12 @@ configmapMounts:
 #     mode: 420
 
 #Write name, secretName and path to mount your secret. Other parameters are optional
-secretMounts: 
-   - name: svol2
-     secretName: secret1
-     secretKey: 
-       - secretkey
-     path: /tmp/certs
+secretMounts: []
+#   - name: svol2
+#     secretName: secret1
+#     secretKey: 
+#       - secretkey
+#     path: /tmp/certs
 #     subPath: chain.pem
 #     readOnly: true
 #     defaultMode: 420
