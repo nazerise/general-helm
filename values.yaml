@@ -32,6 +32,9 @@ service:
 #Create ingress for service with name http
 ingress:
   enabled: true
+  tls:
+    enabled: true
+    secretName: tls
   hosts:
     - host: "test.test.com"
       paths:
@@ -77,6 +80,11 @@ resources:
 #Put the file in helm directory and write the filename under the volume with desired name
 #wire the enviroment and its value under the value with desired name
 secret: []
+#   - name: "tls"
+#     type: kubernetes.io/tls
+#     volume:
+#        tls.crt.filepath: tls.crt
+#        tls.key.filepath: tls.key
 #  - name: "db"
 #    value:
 #      DB_PASSWORD: "123456789"
