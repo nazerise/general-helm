@@ -32,6 +32,8 @@ service:
 #Create ingress for service with name http
 ingress:
   enabled: true
+  ingressClassName: nginx
+  annotations: {}
   tls:
     enabled: true
     secretName: tls
@@ -39,6 +41,7 @@ ingress:
     - host: "test.test.com"
       paths:
         - path: /test/v1
+  
 
 hostAliases:
   enabled: false
