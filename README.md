@@ -1,1 +1,1 @@
-# helm-template
+# General purpose Helm Chart
