@@ -26,8 +26,8 @@ spec:
       {{- range .Values.ingress.hosts }}
       - {{ .host }}
       {{- end }}
-  {{- end }}
     secretName: {{ .Release.Name }}-{{ .Values.ingress.tls.secretName }}-secret
+  {{- end }}
   rules:
     {{- range .Values.ingress.hosts }}
     -
