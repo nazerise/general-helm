@@ -10,7 +10,7 @@ replicaCount: 0
 initContainers: []
 
 #Write port of containt in value of port. Write expose port in value of servicePort.
-#Only the port which is named "http" is used in mapping
+#Only the port which is named "http" is used in ingress
 container:
   ports:
     - port: 8080
