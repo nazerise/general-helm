@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "general.labels" . | nindent 4 }}
+    app: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -15,6 +16,7 @@ spec:
     metadata:
       labels:
         {{- include "general.selectorLabels" . | nindent 8 }}
+        app: {{ .Release.Name }}
       annotations:
         {{- if .Values.extraEnvs }}
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
@@ -30,7 +32,7 @@ spec:
           - podAffinityTerm:
               labelSelector:
                 matchExpressions:
-                - key: app.kubernetes.io/instance
+                - key: app
                   operator: In
                   values:
                   - {{ .Release.Name }}
