@@ -7,4 +7,4 @@ jobs:
     # You need to use the INSTALLATION_NAME from the previous step
     runs-on: arc-runner-set
     steps:
-    - run: test
+    - run: sleep 120
