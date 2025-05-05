@@ -9,5 +9,3 @@ jobs:
     steps:
     - run: | 
         sleep 120
-        helm --help
-        head -c 5000m /dev/zero | tail | sleep 60
