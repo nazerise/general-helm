@@ -8,4 +8,4 @@ jobs:
     runs-on: arc-runner-set
     steps:
     - run: | 
-        sleep 120
+        sleep 1
